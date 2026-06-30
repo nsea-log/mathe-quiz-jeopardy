@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mathe-Quiz</title>
+<style>
+:root {
+  --bg:           #0d1321;
+  --surface:      #16213e;
+  --card-back-a:  #0f3460;
+  --card-back-b:  #1a4f8a;
+  --card-back-border: #1e5fa0;
+  --card-front-a: #16213e;
+  --card-front-b: #1e2d4a;
+  --accent:       #f5a623;
+  --badge:        #e94560;
+  --correct:      #27ae60;
+  --text:         #eaeaea;
+  --text-dim:     #8899aa;
+  --radius:       14px;
+  --shadow:       0 8px 32px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Georgia', serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  user-select: none;
+}
+
+/* ── Header ── */
+header {
+  width: 100%;
+  max-width: 1400px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+#main-title {
+  font-size: clamp(1.3rem, 3.2vmin, 2rem);
+  letter-spacing: .04em;
+  color: var(--accent);
+}
+
+.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: .85rem;
+  font-weight: bold;
+  transition: opacity .15s, transform .1s;
+}
+button:active { transform: scale(.96); }
+.btn-primary   { background: var(--accent); color: #1a1a2e; }
+.btn-secondary { background: #2a4a7f; color: var(--text); }
+.btn-danger    { background: #c0392b; color: #fff; }
+.btn-save      { background: #27ae60; color: #fff; }
+.btn-load      { background: #8e44ad; color: #fff; }
+
+/* ── Scoreboard ── */
+#scoreboard {
+  width: 100%;
+  max-width: 1400px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.team {
+  flex: 1;
+  min-width: 140px;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 2px solid transparent;
+}
+.team input.team-name {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: .95rem;
+  font-weight: bold;
+  width: 100%;
+  outline: none;
+}
+.team .score {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--accent);
+  min-width: 46px;
+  text-align: center;
+}
+.team .score-btns { display: flex; flex-direction: column; gap: 2px; }
+.score-btn {
+  width: 22px; height: 18px;
+  font-size: .7rem;
+  padding: 0;
+  background: #2a4a7f;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+/* ── Panels ── */
+.panel {
+  width: 100%;
+  max-width: 1400px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 18px;
+  display: none;
+  box-shadow: var(--shadow);
+}
+.panel h2 { margin-bottom: 14px; font-size: 1.05rem; color: var(--accent); }
+.panel-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+/* ── Category editor ── */
+.category-block {
+  background: rgba(255,255,255,.04);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.category-block .cat-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.category-block .cat-header input.cat-name {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid #2a4a7f;
+  border-radius: 8px;
+  color: var(--accent);
+  font-weight: bold;
+  padding: 8px 12px;
+  font-size: 1rem;
+  outline: none;
+}
+.category-block .cat-header input.cat-name:focus { border-color: var(--accent); }
+
+.q-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 1fr auto;
+  gap: 8px;
+  margin-bottom: 6px;
+  align-items: start;
+}
+.q-row .points-label {
+  background: var(--bg);
+  border: 1px solid #2a4a7f;
+  border-radius: 8px;
+  color: var(--accent);
+  font-weight: bold;
+  text-align: center;
+  padding: 8px 4px;
+  font-size: .9rem;
+}
+.q-row textarea, .q-row input {
+  background: var(--bg);
+  border: 1px solid #2a4a7f;
+  border-radius: 8px;
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: .87rem;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  min-height: 36px;
+}
+.q-row textarea:focus, .q-row input:focus { border-color: var(--accent); }
+.q-row .rm {
+  background: transparent;
+  border: 1px solid #c0392b;
+  color: #c0392b;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: .75rem;
+  align-self: center;
+}
+.col-headers {
+  display: grid;
+  grid-template-columns: 60px 1fr 1fr auto;
+  gap: 8px;
+  font-size: .7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 6px;
+}
+
+/* ── Settings grid ── */
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.settings-section {
+  background: rgba(255,255,255,.04);
+  border-radius: 10px;
+  padding: 14px;
+}
+.settings-section h3 {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.settings-section label { display:block; font-size: .8rem; color: var(--text-dim); margin-bottom: 4px; }
+.settings-section input[type="text"], .settings-section input[type="number"] {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid #2a4a7f;
+  border-radius: 8px;
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: .9rem;
+  margin-bottom: 8px;
+  outline: none;
+}
+
+/* ── Quiz board ── */
+#board {
+  width: 100%;
+  max-width: 1400px;
+  display: grid;
+  gap: 14px;
+}
+.cat-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cat-title {
+  background: var(--badge);
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 10px;
+  padding: 10px 6px;
+  font-size: clamp(.8rem, 1.8vmin, 1.1rem);
+  letter-spacing: .03em;
+}
+
+.tile-wrap { perspective: 1000px; }
+.tile {
+  position: relative;
+  width: 100%;
+  padding-top: 62%;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform .5s cubic-bezier(.4,0,.2,1);
+}
+.tile.flipped { transform: rotateY(180deg); }
+.tile.used .tile-face.tile-back { opacity: .35; cursor: default; }
+.tile.used { pointer-events: none; }
+.tile.used.flipped { pointer-events: auto; } /* allow flipping back to view answer again before marking used */
+
+.tile-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(8px, 2vmin, 16px);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.tile-back {
+  background: linear-gradient(135deg, var(--card-back-a) 0%, var(--card-back-b) 100%);
+  border: 2px solid var(--card-back-border);
+}
+.tile-points {
+  font-size: clamp(1.6rem, 5.5vmin, 3rem);
+  font-weight: bold;
+  color: var(--accent);
+  text-shadow: 0 2px 10px rgba(0,0,0,.3);
+}
+.tile-front {
+  background: linear-gradient(135deg, var(--card-front-a) 0%, var(--card-front-b) 100%);
+  border: 2px solid var(--badge);
+  transform: rotateY(180deg);
+  gap: 8px;
+  overflow-y: auto;
+}
+.tile-question {
+  font-size: clamp(.72rem, 2vmin, 1.15rem);
+  line-height: 1.45;
+  color: var(--text);
+}
+.tile-question strong { color: var(--accent); }
+.tile-question em { opacity: .9; font-style: italic; }
+.tile-question code {
+  background: rgba(255,255,255,.1);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+}
+.tile-question ul { text-align: left; padding-left: 1.2em; margin: 2px 0; }
+
+.reveal-answer-btn {
+  background: var(--accent);
+  color: #1a1a2e;
+  font-size: clamp(.65rem, 1.6vmin, .85rem);
+  padding: 6px 14px;
+  border-radius: 16px;
+  margin-top: 4px;
+}
+
+.tile-answer {
+  display: none;
+  font-size: clamp(.7rem, 1.9vmin, 1.05rem);
+  line-height: 1.4;
+  color: var(--correct);
+  font-weight: bold;
+  border-top: 1px solid rgba(255,255,255,.15);
+  padding-top: 6px;
+  margin-top: 4px;
+}
+.tile-answer.shown { display: block; }
+
+.mark-used-btn {
+  background: #2a4a7f;
+  color: var(--text);
+  font-size: clamp(.6rem, 1.5vmin, .78rem);
+  padding: 5px 12px;
+  border-radius: 14px;
+  margin-top: 4px;
+}
+
+/* ── Status / Toast ── */
+#status { margin-top: 16px; color: var(--text-dim); font-size: .85rem; }
+
+#toast {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #27ae60;
+  color: #fff;
+  padding: 12px 26px;
+  border-radius: 30px;
+  font-weight: bold;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s, transform .3s;
+  z-index: 9999;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.error { background: #c0392b; }
+
+input[type="file"] { display:none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div id="main-title">🧮 Mathe-Quiz</div>
+  <div class="controls">
+    <button class="btn-secondary" onclick="togglePanel('editor')">✏️ Fragen</button>
+    <button class="btn-secondary" onclick="togglePanel('settings')">⚙️ Einstellungen</button>
+    <button class="btn-secondary" onclick="newRound()">🔄 Neue Runde</button>
+    <button class="btn-save" onclick="exportConfig()">💾 Speichern</button>
+    <button class="btn-load" onclick="document.getElementById('file-import').click()">📂 Laden</button>
+    <input type="file" id="file-import" accept=".json" onchange="importConfig(event)">
+  </div>
+</header>
+
+<!-- Scoreboard -->
+<div id="scoreboard"></div>
+
+<!-- Fragen-Editor -->
+<div id="editor" class="panel">
+  <h2>Fragen bearbeiten</h2>
+  <div style="margin-bottom:14px;">
+    <label style="font-size:.82rem;color:var(--text-dim);display:block;margin-bottom:4px;">Quiz-Titel</label>
+    <input type="text" id="input-title"
+           style="width:100%;background:var(--bg);border:1px solid #2a4a7f;border-radius:8px;color:var(--text);padding:8px 12px;font-size:.95rem;outline:none;"
+           oninput="liveUpdateTitle(this.value)">
+  </div>
+  <div id="category-list"></div>
+  <div class="panel-actions">
+    <button class="btn-primary" onclick="buildBoard()">✔ Quiz erstellen</button>
+    <button class="btn-danger" onclick="togglePanel('editor')">✖ Schließen</button>
+  </div>
+</div>
+
+<!-- Einstellungen -->
+<div id="settings" class="panel">
+  <h2>Einstellungen</h2>
+  <div class="settings-grid">
+    <div class="settings-section">
+      <h3>Texte</h3>
+      <label>Text "Antwort zeigen"-Button</label>
+      <input type="text" id="reveal-text" value="Antwort zeigen" oninput="renderBoard()">
+      <label>Text "Als erledigt markieren"</label>
+      <input type="text" id="used-text" value="Als erledigt markieren ✓" oninput="renderBoard()">
+    </div>
+    <div class="settings-section">
+      <h3>Teams</h3>
+      <label>Anzahl Teams</label>
+      <input type="number" id="team-count" value="3" min="1" max="6" oninput="setTeamCount(this.value)">
+      <div style="font-size:.75rem;color:var(--text-dim)">Teamnamen direkt im Punktestand-Bereich oben editierbar.</div>
+    </div>
+  </div>
+  <div class="panel-actions">
+    <button class="btn-primary" onclick="renderBoard()">✔ Übernehmen</button>
+    <button class="btn-danger" onclick="togglePanel('settings')">✖ Schließen</button>
+  </div>
+</div>
+
+<!-- Quiz Board -->
+<div id="board"></div>
+<div id="status"></div>
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   STATE
+   ══════════════════════════════════════════════ */
+let appTitle = "🧮 Mathe-Quiz";
+
+let categories = [
+  {
+    name: "Flächen & Rauminhalte",
+    questions: [
+      { points: 10, q: "Berechne die **Fläche** eines Rechtecks mit den Seiten 6 cm und 4 cm.", a: "A = 6 cm · 4 cm = **24 cm²**" },
+      { points: 20, q: "Ein Kreis hat den Radius r = 5 cm.\nBerechne den **Flächeninhalt** (π ≈ 3,14).", a: "A = π · r²\nA ≈ 3,14 · 25 = **78,5 cm²**" },
+      { points: 30, q: "Ein Würfel hat die Kantenlänge a = 4 cm.\nBerechne das **Volumen**.", a: "V = a³ = 4³ = **64 cm³**" },
+    ]
+  },
+  {
+    name: "Algebra (Terme & Gleichungen)",
+    questions: [
+      { points: 10, q: "Vereinfache den Term:\n**3x + 5x − 2x**", a: "3x + 5x − 2x = **6x**" },
+      { points: 20, q: "Löse die Gleichung:\n**2x + 6 = 18**", a: "2x = 12\nx = **6**" },
+      { points: 30, q: "Löse die Gleichung:\n**3(x − 2) = 2x + 5**", a: "3x − 6 = 2x + 5\nx = **11**" },
+    ]
+  },
+  {
+    name: "Lineare Funktionen",
+    questions: [
+      { points: 10, q: "Gegeben: f(x) = 2x + 3.\nBerechne **f(4)**.", a: "f(4) = 2·4 + 3 = **11**" },
+      { points: 20, q: "Bestimme die **Steigung** der Geraden durch die Punkte\nP(1|2) und Q(3|8).", a: "m = (8−2)/(3−1) = 6/2 = **3**" },
+      { points: 30, q: "Eine Gerade hat die Steigung m = 2 und geht durch den Punkt P(1|5).\nBestimme die **Funktionsgleichung**.", a: "y = mx + b\n5 = 2·1 + b → b = 3\n**y = 2x + 3**" },
+    ]
+  },
+];
+
+let teams = [
+  { name: "Team 1", score: 0 },
+  { name: "Team 2", score: 0 },
+  { name: "Team 3", score: 0 },
+];
+
+let usedTiles = {}; // key "catIdx-qIdx" -> true
+
+/* ══════════════════════════════════════════════
+   HELPERS
+   ══════════════════════════════════════════════ */
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function parseFormatting(raw){
+  if(!raw) return '<p style="opacity:.5">(kein Text)</p>';
+  const lines = raw.split('\n');
+  let html = '';
+  let listOpen = false;
+  let paraBuffer = [];
+  const flushPara = () => { if(paraBuffer.length){ html += `<p>${paraBuffer.join('<br>')}</p>`; paraBuffer = []; } };
+  const closeList = () => { if(listOpen){ html += '</ul>'; listOpen = false; } };
+  const inlineFormat = (text) => {
+    let t = esc(text);
+    t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+    t = t.replace(/`(.+?)`/g, '<code>$1</code>');
+    return t;
+  };
+  for(const rawLine of lines){
+    const line = rawLine.trim();
+    if(line === ''){ closeList(); flushPara(); continue; }
+    if(/^-{3,}$/.test(line)){ closeList(); flushPara(); html += '<hr>'; continue; }
+    if(/^[-•]\s+/.test(line)){
+      flushPara();
+      if(!listOpen){ html += '<ul>'; listOpen = true; }
+      html += `<li>${inlineFormat(line.replace(/^[-•]\s+/, ''))}</li>`;
+      continue;
+    }
+    closeList();
+    paraBuffer.push(inlineFormat(line));
+  }
+  closeList(); flushPara();
+  return html || '<p style="opacity:.5">(kein Text)</p>';
+}
+
+function autoGrow(el){
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+let toastTimer = null;
+function showToast(msg, isError=false){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', isError);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+function liveUpdateTitle(val){
+  appTitle = val || "Mathe-Quiz";
+  document.getElementById('main-title').textContent = appTitle;
+  document.title = appTitle.replace(/\p{Emoji}/gu,'').trim() || "Mathe-Quiz";
+}
+
+let activePanel = null;
+function togglePanel(id){
+  if(activePanel === id){ document.getElementById(id).style.display='none'; activePanel=null; return; }
+  ['editor','settings'].forEach(p => document.getElementById(p).style.display='none');
+  if(id === 'editor') renderEditor();
+  document.getElementById(id).style.display = 'block';
+  activePanel = id;
+}
+
+/* ══════════════════════════════════════════════
+   SCOREBOARD
+   ══════════════════════════════════════════════ */
+function setTeamCount(n){
+  n = Math.max(1, Math.min(6, parseInt(n)||1));
+  while(teams.length < n) teams.push({ name: `Team ${teams.length+1}`, score: 0 });
+  while(teams.length > n) teams.pop();
+  renderScoreboard();
+}
+
+function renderScoreboard(){
+  const sb = document.getElementById('scoreboard');
+  sb.innerHTML = '';
+  teams.forEach((t,i)=>{
+    const div = document.createElement('div');
+    div.className = 'team';
+    div.innerHTML = `
+      <input class="team-name" type="text" value="${esc(t.name)}" oninput="teams[${i}].name=this.value">
+      <div class="score">${t.score}</div>
+      <div class="score-btns">
+        <button class="score-btn" onclick="adjustScore(${i}, 10)">▲</button>
+        <button class="score-btn" onclick="adjustScore(${i}, -10)">▼</button>
+      </div>`;
+    sb.appendChild(div);
+  });
+}
+
+function adjustScore(i, delta){
+  teams[i].score += delta;
+  renderScoreboard();
+}
+
+/* ══════════════════════════════════════════════
+   FRAGEN-EDITOR
+   ══════════════════════════════════════════════ */
+function renderEditor(){
+  document.getElementById('input-title').value = appTitle;
+  const list = document.getElementById('category-list');
+  list.innerHTML = '';
+
+  categories.forEach((cat, ci) => {
+    const block = document.createElement('div');
+    block.className = 'category-block';
+
+    let rowsHtml = `<div class="col-headers"><span>Punkte</span><span>Frage</span><span>Antwort</span><span></span></div>`;
+    cat.questions.forEach((q, qi) => {
+      rowsHtml += `
+        <div class="q-row">
+          <input type="number" class="points-label" value="${q.points}"
+                 oninput="categories[${ci}].questions[${qi}].points = parseInt(this.value)||0">
+          <textarea rows="1" placeholder="Frage eingeben …"
+                    oninput="categories[${ci}].questions[${qi}].q=this.value; autoGrow(this)"
+                    onfocus="autoGrow(this)">${esc(q.q)}</textarea>
+          <textarea rows="1" placeholder="Antwort eingeben …"
+                    oninput="categories[${ci}].questions[${qi}].a=this.value; autoGrow(this)"
+                    onfocus="autoGrow(this)">${esc(q.a)}</textarea>
+          <button class="rm" onclick="removeQuestion(${ci},${qi})">✕</button>
+        </div>`;
+    });
+
+    block.innerHTML = `
+      <div class="cat-header">
+        <input type="text" class="cat-name" value="${esc(cat.name)}"
+               oninput="categories[${ci}].name=this.value" placeholder="Kategoriename">
+        <button class="btn-danger" style="padding:6px 10px;font-size:.75rem" onclick="removeCategory(${ci})">Kategorie ✕</button>
+      </div>
+      ${rowsHtml}
+      <button class="btn-secondary" style="margin-top:6px;font-size:.78rem" onclick="addQuestion(${ci})">+ Frage hinzufügen</button>
+    `;
+    list.appendChild(block);
+  });
+
+  const addCatBtn = document.createElement('button');
+  addCatBtn.className = 'btn-primary';
+  addCatBtn.textContent = '+ Neue Kategorie';
+  addCatBtn.style.marginTop = '6px';
+  addCatBtn.onclick = addCategory;
+  list.appendChild(addCatBtn);
+
+  list.querySelectorAll('textarea').forEach(autoGrow);
+}
+
+function addCategory(){
+  categories.push({ name: `Kategorie ${categories.length+1}`, questions: [{ points: 10, q: '', a: '' }] });
+  renderEditor();
+}
+function removeCategory(ci){ categories.splice(ci,1); renderEditor(); }
+function addQuestion(ci){
+  const existing = categories[ci].questions;
+  const nextPoints = existing.length ? Math.max(...existing.map(q=>q.points)) + 10 : 10;
+  existing.push({ points: nextPoints, q: '', a: '' });
+  renderEditor();
+}
+function removeQuestion(ci,qi){ categories[ci].questions.splice(qi,1); renderEditor(); }
+
+function buildBoard(){
+  document.getElementById('editor').style.display = 'none';
+  document.getElementById('settings').style.display = 'none';
+  activePanel = null;
+  usedTiles = {};
+  renderBoard();
+}
+
+/* ══════════════════════════════════════════════
+   QUIZ BOARD
+   ══════════════════════════════════════════════ */
+function renderBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  if(categories.length === 0){ updateStatus(); return; }
+
+  board.style.gridTemplateColumns = `repeat(${categories.length}, 1fr)`;
+
+  const revealText = document.getElementById('reveal-text')?.value || 'Antwort zeigen';
+  const usedText = document.getElementById('used-text')?.value || 'Als erledigt markieren ✓';
+
+  categories.forEach((cat, ci) => {
+    const col = document.createElement('div');
+    col.className = 'cat-column';
+
+    const title = document.createElement('div');
+    title.className = 'cat-title';
+    title.textContent = cat.name || `Kategorie ${ci+1}`;
+    col.appendChild(title);
+
+    cat.questions.forEach((q, qi) => {
+      const key = `${ci}-${qi}`;
+      const isUsed = !!usedTiles[key];
+
+      const wrap = document.createElement('div');
+      wrap.className = 'tile-wrap';
+
+      const tile = document.createElement('div');
+      tile.className = 'tile' + (isUsed ? ' used' : '');
+      tile.id = `tile-${key}`;
+      tile.onclick = (e) => {
+        if(e.target.closest('button')) return;
+        flipTile(key);
+      };
+
+      tile.innerHTML = `
+        <div class="tile-face tile-back">
+          <div class="tile-points">${q.points}</div>
+        </div>
+        <div class="tile-face tile-front">
+          <div class="tile-question">${parseFormatting(q.q)}</div>
+          <button class="reveal-answer-btn" onclick="revealAnswer('${key}')">${esc(revealText)}</button>
+          <div class="tile-answer" id="answer-${key}">${parseFormatting(q.a)}</div>
+          <button class="mark-used-btn" onclick="markUsed('${key}')">${esc(usedText)}</button>
+        </div>`;
+
+      wrap.appendChild(tile);
+      col.appendChild(wrap);
+    });
+
+    board.appendChild(col);
+  });
+
+  updateStatus();
+}
+
+function flipTile(key){
+  const tile = document.getElementById(`tile-${key}`);
+  tile.classList.toggle('flipped');
+}
+
+function revealAnswer(key){
+  document.getElementById(`answer-${key}`).classList.add('shown');
+}
+
+function markUsed(key){
+  usedTiles[key] = true;
+  const tile = document.getElementById(`tile-${key}`);
+  tile.classList.remove('flipped');
+  setTimeout(()=> tile.classList.add('used'), 260);
+  updateStatus();
+}
+
+function newRound(){
+  usedTiles = {};
+  teams.forEach(t => t.score = 0);
+  renderScoreboard();
+  renderBoard();
+  showToast('🔄 Neue Runde gestartet – Punkte zurückgesetzt');
+}
+
+function updateStatus(){
+  let total = 0, used = 0;
+  categories.forEach((cat,ci)=> cat.questions.forEach((q,qi)=>{
+    total++;
+    if(usedTiles[`${ci}-${qi}`]) used++;
+  }));
+  document.getElementById('status').textContent = total ? `${used} von ${total} Fragen erledigt` : '';
+}
+
+/* ══════════════════════════════════════════════
+   EXPORT / IMPORT
+   ══════════════════════════════════════════════ */
+function exportConfig(){
+  const config = {
+    version: 1,
+    type: 'mathe-quiz',
+    appTitle,
+    categories,
+    teams,
+    revealText: document.getElementById('reveal-text')?.value || 'Antwort zeigen',
+    usedText: document.getElementById('used-text')?.value || 'Als erledigt markieren ✓',
+  };
+  const json = JSON.stringify(config, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeName = appTitle.replace(/[^\w\säöüÄÖÜß-]/g,'').trim().replace(/\s+/g,'_') || 'mathe_quiz';
+  a.href = url;
+  a.download = `${safeName}_config.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('💾 Quiz gespeichert!');
+}
+
+function importConfig(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  event.target.value = '';
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const cfg = JSON.parse(e.target.result);
+      if(!cfg.version || !Array.isArray(cfg.categories)){
+        showToast('⚠️ Ungültige Datei.', true); return;
+      }
+      appTitle = cfg.appTitle || 'Mathe-Quiz';
+      categories = cfg.categories;
+      teams = cfg.teams || teams;
+      usedTiles = {};
+
+      document.getElementById('main-title').textContent = appTitle;
+      document.title = appTitle.replace(/\p{Emoji}/gu,'').trim() || 'Mathe-Quiz';
+
+      const setIfExists = (id, val) => { const el=document.getElementById(id); if(el) el.value = val; };
+      setIfExists('reveal-text', cfg.revealText || 'Antwort zeigen');
+      setIfExists('used-text', cfg.usedText || 'Als erledigt markieren ✓');
+      setIfExists('team-count', teams.length);
+
+      ['editor','settings'].forEach(p => document.getElementById(p).style.display='none');
+      activePanel = null;
+
+      renderScoreboard();
+      renderBoard();
+      showToast(`✅ "${appTitle}" geladen`);
+    } catch(err){
+      showToast('⚠️ Fehler: ' + err.message, true);
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ══════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════ */
+document.getElementById('main-title').textContent = appTitle;
+renderScoreboard();
+renderBoard();
+</script>
+</body>
+</html>
